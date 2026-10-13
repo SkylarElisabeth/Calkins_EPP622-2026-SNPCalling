@@ -109,7 +109,7 @@ Now we will make a loop to run fastp across all the samples, both R1 and R2.
 ```
 nano run_fastp.sh
 ```
-
+Inside run_fastp.sh, I entered the following and then exited back to terminal:
 
 ```
 #!/bin/bash
@@ -164,16 +164,26 @@ done
 echo "All done! Reports are in the fastp_reports/ folder."
 
 ```
-commands
+Now back in terminal, enter
 ```
-
-MultiQC gives a rounded number for total reads and does not report total bases per sample. To find out those numbers use this:
+bash run_fastp.sh
+```
+This loop generates a folder containing our trimmed sample outputs, so we will open it up, run fastqc across each trimmed sample, and then run multiqc to compare the now trimmed samples.
 
 ```
-for f in *.fastq.gz; do
-  echo -ne "$f\t"
-  zcat "$f" | awk 'NR%4==2{r++; b+=length($0)} END{printf "%d\t%d\t%.1f\n", r, b, b/r}'
-done | column -t
+cd trimmed/
+fastqc -t 2 ./*.fastq.gz -o .
+
+```
+Now, I will secure copy to me Desktop again to open the MultiQC of the trimmed files. In the base terminal and still in my EPP622 files directory, I am entering:
+```
+scp yng832@login.isaac.utk.edu:/lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/02_fastp/trimmed//multiqc_test2_trimmed/multiqc_test2_trimmed.html .
+```
+Next, I am copying over the reads_and_base_counts.sh file from our 01_fastqc file to get a clean report on total reads and total bases per sample. Then I will run it.
+
+```
+cp ../../01_fastqc/reads_and_base_count.sh .
+bash reads_and_base_count.sh
 ```
 
 This gives the total reads, then the total bases, then the average read length for each file.
@@ -186,10 +196,10 @@ For each sample, report R1 + R2. Use the reference genome size above to calculat
 
 | Sample | Reads before | Reads after | Mean length before | Mean length after |
 | --- | --- | --- | --- | --- |
-| A | \- | \- | \- | \- |
-| B | \- | \- | \- | \- |
-| C | \- | \- | \- | \- |
-| D | \- | \- | \- | \- |
+| A | 1609300| 1609300 | 241395000 | 241371911 |
+| B | 321860 | 321860 | 48279000 | 48276193 |
+| C | 1609300 | 1577258 | 241395000 | 198503407 |
+| D | 1609300 | 1609300 | 241395000 | 241334120 |
 
 ## Step 3: Alignment (bwa-mem2 + samtools)
 
