@@ -6,11 +6,14 @@ Repository URL: - https://github.com/SkylarElisabeth/Calkins_EPP622-2026-SNPCall
 
 ## Setup
 
-Create directory and symbolically link provided files.
-
+Log onto the sphinx server and navigate to my directory. 
 ```
 ssh sphinx
 cd /lustre/isaac24/proj/UTK0505/yng832/
+```
+I made a directory for test 2 files, including a file for raw data and analyses. Also, into the raw_data file, I copied the reads from the class test2 directory. 
+Create directory and symbolically link provided files.
+```
 mkdir test2_
 cd test2_
 mkdir raw_data
@@ -22,68 +25,74 @@ mkdir 01_fastqc
 mkdir 02_fastp
 mkdir 03_bwamem2
 mkdir 04_bctools
-
 ```
 
 ## Step 1: Quality Control (FastQC + MultiQC)
-
+First, I opened the 01_fastqc folder and symbolically linked the raw data files to the directory. 
 ```
 cd 01_fastqc
 ln -s ../../raw_data/*gz .
-nano individual_fastqc.sh
 ```
-Within the individual_fastqc.sh file write the following:
-```
-for file in *fastq.gz
-do
-    fastqc -t 2 $file
-done
-```
-Now continue in main terminal:
+
+Turn on the conda environment:
 ```
 conda activate snps
-bash individual_fastqc.sh
 ```
-Once complete, run the following for Multiqc:
+
+Next, I ran fastqc for all the files.
+```
+fastqc -t 2 ../../raw_data/*.fastq.gz -o .
+```
+
+Once completed, I ran multiqc to compare samples and determine thier quality. Additionally, I renamed the files to reflect the multiqc reports for the raw data.
 ```
 multiqc .
-mv multiqc_report.html multiqc_raw_test2.html
+mv multiqc_data multiqc_raw_data
+mv multiqc_report.html multiqc_report_raw.html
 ```
-
-
-
-
-
-
-
-
-MultiQC gives a rounded number for total reads and does not report total bases per sample. To find out those numbers use this:
+Then, in a new terminal, I moved this file to my desktop folder called EPP622 to open and view the MultiQC report.
 
 ```
-nano reads_and_base_count.sh 
+scp yng832@login.isaac.utk.edu:/lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/01_fastqc/multiqc_test2_raw.html .  
+```
+Linked results here: file:///Users/skylarcalkins/Desktop/EPP622/multiqc_test2_raw.html
+
+
+MultiQC gives a rounded number for total reads and does not report total bases per sample. So to find out those numbers I used this:
+
+```
+nano reads_and_base_count.sh
+```
+inside reads_and_base_counts.sh:
+
+```
 for f in *.fastq.gz; do
   echo -ne "$f\t"
   zcat "$f" | awk 'NR%4==2{r++; b+=length($0)} END{printf "%d\t%d\t%.1f\n", r, b, b/r}'
 done | column -t
+```
+Then back in terminal run
+```
+bash reads_and_base_count.sh
 ```
 
 This gives the total reads, then the total bases, then the average read length for each file.
 
 ### Results
 
-MultiQC report path and name: `_______`
-
-One sample has adapter and polyG issues, one sample has low quality, one sample has low coverage, and one is problem free. Label each sample below with its quality issues.
-For each sample, report R1 + R2.
+MultiQC report path and name: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/01_fastqc/multiqc_test2_raw.html
 
 | Sample | Total reads | Total bases | Quality issues? |
 | --- | --- | --- | --- |
-| A | 1609300 | 241395000 | \- |
-| B | 321860 | 48279000 | \- |
-| C | 1609300 | 241395000 | \- |
-| D | 1609300 | 241395000 | \- |
+| A | 1609300 | 241395000 | Looks okay |
+| B | 321860 | 48279000 | Low Coverage|
+| C | 1609300 | 241395000 | Adapter Content / PolyG Issues|
+| D | 1609300 | 241395000 | Low Quality|
 
 ## Step 2: Read Trimming and Filtering (fastp)
+
+
+
 
 WARNING: Because these reads are simulated, fastp fails to identify that they need poly-G tail trimming. Turn that on with a flag.
 
@@ -91,7 +100,68 @@ ADVICE: Its easier to compare the reads pre and post trimming if you run multiqc
 
 ### Commands
 
-Comments 
+Next, we will trim the samples using fastp. First, we will move into the proper analyses folder and symbolically link our sample files:
+```
+cd ../02_fastp/
+ln -s ../01_fastqc/*gz .
+```
+Now we will make a loop to run fastp across all the samples, both R1 and R2.
+```
+nano run_fastp.sh
+```
+
+
+```
+#!/bin/bash
+# run_fastp.sh
+# Run fastp on every pair of paired-end FASTQ files in this folder.
+# Usage:  bash run_fastp.sh
+
+# Stop the script immediately if any command fails.
+set -e
+
+# Make a folder to hold the fastp reports (the -p means "don't complain if it alre$
+mkdir -p fastp_reports
+mkdir -p trimmed
+
+# Loop over every R1 file in the current directory.
+# The * is a wildcard: it matches ANY text, so this matches all 10 R1 files.
+for R1 in *_R1.fastq.gz
+do
+    # Build the matching R2 filename by swapping "_R1" for "_R2" in the name.
+    # The ${VAR/old/new} syntax replaces the first match of "old" with "new".
+    R2="${R1/_R1/_R2}"
+
+    # Build a short sample name by chopping "_R1.fastq.gz" off the end.
+    # The ${VAR%pattern} syntax removes "pattern" from the END of the value.
+    # Example: 21_FP_OH_FSB_F_10_R1.fastq.gz  ->  21_FP_OH_FSB_F_10
+    SAMPLE="${R1%_R1.fastq.gz}"
+
+    # Print a message so we can watch the progress in the terminal.
+    echo "Now processing sample: $SAMPLE"
+
+    # Safety check: make sure the R2 file actually exists before running fastp.
+    if [ ! -f "$R2" ]; then
+        echo "  WARNING: no R2 file found for $R1 -- skipping."
+        continue    # "continue" jumps to the next sample in the loop
+    fi
+
+    # This is the fastp command, with the filenames replaced by variables.
+    fastp \
+	--in1 "$R1" \
+        --out1 trimmed/"$SAMPLE"_R1.trimmed.fastq.gz \
+        --in2 "$R2" \
+        --out2 trimmed/"$SAMPLE"_R2.trimmed.fastq.gz \
+        --detect_adapter_for_pe \
+        --trim_poly_g \
+        --thread 2 \
+        --json fastp_reports/"$SAMPLE".fastp.json \
+        --html fastp_reports/"$SAMPLE".fastp.html
+
+
+done
+
+echo "All done! Reports are in the fastp_reports/ folder."
 
 ```
 commands
