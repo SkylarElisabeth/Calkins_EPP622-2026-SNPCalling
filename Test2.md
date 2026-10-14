@@ -284,7 +284,7 @@ scp yng832@login.isaac.utk.edu:/lustre/isaac24/proj/UTK0505/yng832/test2_/analys
 
 ### Results
 
-MultiQC report path and name: `_______`
+MultiQC report path and name: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/03_bwamem2/multiqc_test2_post-bam.html
 
 | Sample | % mapped | % properly paired | Mean depth |
 | --- | --- | --- | --- |
@@ -374,41 +374,275 @@ cd 05_evaluation/
 ln -s  ../../../../test2/check/evaluate_snps_v4.py .
 ln -s  ../../../../test2/check/truth_snps.vcf .
 ```
-Now running evaluate_snps_v4.py:
+Now running evaluate_snps_v4.py on raw, gentle, and stringent files:
 ```
 python3 ./evaluate_snps_v4.py --truth ./truth_snps.vcf --calls ../04_bcftools/test2_data.raw.vcf.gz --all-samples --tag raw --outdir ../05_evaluation/
 python3 ./evaluate_snps_v4.py --truth ./truth_snps.vcf --calls ../04_bcftools/test2_data.gentle_filter.vcf.gz --all-samples --tag gentle --outdir ../05_evaluation/
 python3 ./evaluate_snps_v4.py --truth ./truth_snps.vcf --calls ../04_bcftools/test2_data.stringent_filter.vcf.gz --all-samples --tag stringent --outdir ../05_evaluation/
-
-
-
- Find the precision, recall and F1 for gently filtered and stringently filtered SNP sets.
-
-Example of how to run evaluate_snps_v4.py:
-
-```bash
-python3 evaluate_snps_v4.py \
-    --truth truth_snps.vcf --calls <yourvcffile> \
-    --all-samples --tag strict --outdir outdir
 ```
-
+Exporting the resulting summary table into a .csv so I can open in excel for easier viewing:
 ```
-code
+python3 -c 'import csv, sys; csv.writer(sys.stdout).writerows(csv.reader(sys.stdin, delimiter="\t"))'   < summary_all_runs.tsv > summary_all_runs.csv
 ```
-
-
-
-in 05_ do :: python3 ../04_bctools/evaluate_snps_v4.py --truth ../04_bctools/truth_snps.vcf --calls ../04_bctools/test2_data.stringent_filter.vcf.gz --all-samples --tag gentle --outdir ../05_evaluation/
-
-
-
-
 ## Directory structure
 
-From `this folder` that holds all my analysis, here is the directory structure (paste the output of: `tree .`):
-
+My test2 is structured like this: 
 ```
-#output of tree command:
+.
+├── analyses
+│   ├── 01_fastqc
+│   │   ├── individual_fastqc.sh
+│   │   ├── multiqc_raw_data
+│   │   │   ├── fastqc_adapter_content_plot.txt
+│   │   │   ├── fastqc_overrepresented_sequences_plot.txt
+│   │   │   ├── fastqc_per_base_n_content_plot.txt
+│   │   │   ├── fastqc_per_base_sequence_quality_plot.txt
+│   │   │   ├── fastqc_per_sequence_gc_content_plot_Counts.txt
+│   │   │   ├── fastqc_per_sequence_gc_content_plot_Percentages.txt
+│   │   │   ├── fastqc_per_sequence_quality_scores_plot.txt
+│   │   │   ├── fastqc_sequence_counts_plot.txt
+│   │   │   ├── fastqc_sequence_duplication_levels_plot.txt
+│   │   │   ├── fastqc-status-check-heatmap.txt
+│   │   │   ├── fastqc_top_overrepresented_sequences_table.txt
+│   │   │   ├── llms-full.txt
+│   │   │   ├── multiqc_citations.txt
+│   │   │   ├── multiqc_data.json
+│   │   │   ├── multiqc_fastqc.txt
+│   │   │   ├── multiqc_general_stats.txt
+│   │   │   ├── multiqc.log
+│   │   │   ├── multiqc.parquet
+│   │   │   ├── multiqc_software_versions.txt
+│   │   │   └── multiqc_sources.txt
+│   │   ├── multiqc_test2_raw.html
+│   │   ├── reads_and_base_count.sh
+│   │   ├── Sample_A_R1_fastqc.html
+│   │   ├── Sample_A_R1_fastqc.zip
+│   │   ├── Sample_A_R1.fastq.gz -> ../../raw_data/Sample_A_R1.fastq.gz
+│   │   ├── Sample_A_R2_fastqc.html
+│   │   ├── Sample_A_R2_fastqc.zip
+│   │   ├── Sample_A_R2.fastq.gz -> ../../raw_data/Sample_A_R2.fastq.gz
+│   │   ├── Sample_B_R1_fastqc.html
+│   │   ├── Sample_B_R1_fastqc.zip
+│   │   ├── Sample_B_R1.fastq.gz -> ../../raw_data/Sample_B_R1.fastq.gz
+│   │   ├── Sample_B_R2_fastqc.html
+│   │   ├── Sample_B_R2_fastqc.zip
+│   │   ├── Sample_B_R2.fastq.gz -> ../../raw_data/Sample_B_R2.fastq.gz
+│   │   ├── Sample_C_R1_fastqc.html
+│   │   ├── Sample_C_R1_fastqc.zip
+│   │   ├── Sample_C_R1.fastq.gz -> ../../raw_data/Sample_C_R1.fastq.gz
+│   │   ├── Sample_C_R2_fastqc.html
+│   │   ├── Sample_C_R2_fastqc.zip
+│   │   ├── Sample_C_R2.fastq.gz -> ../../raw_data/Sample_C_R2.fastq.gz
+│   │   ├── Sample_D_R1_fastqc.html
+│   │   ├── Sample_D_R1_fastqc.zip
+│   │   ├── Sample_D_R1.fastq.gz -> ../../raw_data/Sample_D_R1.fastq.gz
+│   │   ├── Sample_D_R2_fastqc.html
+│   │   ├── Sample_D_R2_fastqc.zip
+│   │   ├── Sample_D_R2.fastq.gz -> ../../raw_data/Sample_D_R2.fastq.gz
+│   │   └── testing_name
+│   │       ├── testing_name_data
+│   │       │   ├── fastqc_adapter_content_plot.txt
+│   │       │   ├── fastqc_overrepresented_sequences_plot.txt
+│   │       │   ├── fastqc_per_base_n_content_plot.txt
+│   │       │   ├── fastqc_per_base_sequence_quality_plot.txt
+│   │       │   ├── fastqc_per_sequence_gc_content_plot_Counts.txt
+│   │       │   ├── fastqc_per_sequence_gc_content_plot_Percentages.txt
+│   │       │   ├── fastqc_per_sequence_quality_scores_plot.txt
+│   │       │   ├── fastqc_sequence_counts_plot.txt
+│   │       │   ├── fastqc_sequence_duplication_levels_plot.txt
+│   │       │   ├── fastqc-status-check-heatmap.txt
+│   │       │   ├── fastqc_top_overrepresented_sequences_table.txt
+│   │       │   ├── llms-full.txt
+│   │       │   ├── multiqc_citations.txt
+│   │       │   ├── multiqc_data.json
+│   │       │   ├── multiqc_fastqc.txt
+│   │       │   ├── multiqc_general_stats.txt
+│   │       │   ├── multiqc.log
+│   │       │   ├── multiqc.parquet
+│   │       │   ├── multiqc_software_versions.txt
+│   │       │   └── multiqc_sources.txt
+│   │       └── testing_name.html
+│   ├── 02_fastp
+│   │   ├── fastp_reports
+│   │   │   ├── Sample_A.fastp.html
+│   │   │   ├── Sample_A.fastp.json
+│   │   │   ├── Sample_B.fastp.html
+│   │   │   ├── Sample_B.fastp.json
+│   │   │   ├── Sample_C.fastp.html
+│   │   │   ├── Sample_C.fastp.json
+│   │   │   ├── Sample_D.fastp.html
+│   │   │   └── Sample_D.fastp.json
+│   │   ├── run_fastp.sh
+│   │   ├── Sample_A_R1.fastq.gz -> ../01_fastqc/Sample_A_R1.fastq.gz
+│   │   ├── Sample_A_R2.fastq.gz -> ../01_fastqc/Sample_A_R2.fastq.gz
+│   │   ├── Sample_B_R1.fastq.gz -> ../01_fastqc/Sample_B_R1.fastq.gz
+│   │   ├── Sample_B_R2.fastq.gz -> ../01_fastqc/Sample_B_R2.fastq.gz
+│   │   ├── Sample_C_R1.fastq.gz -> ../01_fastqc/Sample_C_R1.fastq.gz
+│   │   ├── Sample_C_R2.fastq.gz -> ../01_fastqc/Sample_C_R2.fastq.gz
+│   │   ├── Sample_D_R1.fastq.gz -> ../01_fastqc/Sample_D_R1.fastq.gz
+│   │   ├── Sample_D_R2.fastq.gz -> ../01_fastqc/Sample_D_R2.fastq.gz
+│   │   └── trimmed
+│   │       ├── multiqc_test2_trimmed
+│   │       │   ├── multiqc_test2_trimmed_data
+│   │       │   │   ├── fastqc_adapter_content_plot.txt
+│   │       │   │   ├── fastqc_per_base_n_content_plot.txt
+│   │       │   │   ├── fastqc_per_base_sequence_quality_plot.txt
+│   │       │   │   ├── fastqc_per_sequence_gc_content_plot_Counts.txt
+│   │       │   │   ├── fastqc_per_sequence_gc_content_plot_Percentages.txt
+│   │       │   │   ├── fastqc_per_sequence_quality_scores_plot.txt
+│   │       │   │   ├── fastqc_sequence_counts_plot.txt
+│   │       │   │   ├── fastqc_sequence_duplication_levels_plot.txt
+│   │       │   │   ├── fastqc_sequence_length_distribution_plot.txt
+│   │       │   │   ├── fastqc-status-check-heatmap.txt
+│   │       │   │   ├── llms-full.txt
+│   │       │   │   ├── multiqc_citations.txt
+│   │       │   │   ├── multiqc_data.json
+│   │       │   │   ├── multiqc_fastqc.txt
+│   │       │   │   ├── multiqc_general_stats.txt
+│   │       │   │   ├── multiqc.log
+│   │       │   │   ├── multiqc.parquet
+│   │       │   │   ├── multiqc_software_versions.txt
+│   │       │   │   └── multiqc_sources.txt
+│   │       │   └── multiqc_test2_trimmed.html
+│   │       ├── reads_and_base_count.sh
+│   │       ├── Sample_A_R1.trimmed_fastqc.html
+│   │       ├── Sample_A_R1.trimmed_fastqc.zip
+│   │       ├── Sample_A_R1.trimmed.fastq.gz
+│   │       ├── Sample_A_R2.trimmed_fastqc.html
+│   │       ├── Sample_A_R2.trimmed_fastqc.zip
+│   │       ├── Sample_A_R2.trimmed.fastq.gz
+│   │       ├── Sample_B_R1.trimmed_fastqc.html
+│   │       ├── Sample_B_R1.trimmed_fastqc.zip
+│   │       ├── Sample_B_R1.trimmed.fastq.gz
+│   │       ├── Sample_B_R2.trimmed_fastqc.html
+│   │       ├── Sample_B_R2.trimmed_fastqc.zip
+│   │       ├── Sample_B_R2.trimmed.fastq.gz
+│   │       ├── Sample_C_R1.trimmed_fastqc.html
+│   │       ├── Sample_C_R1.trimmed_fastqc.zip
+│   │       ├── Sample_C_R1.trimmed.fastq.gz
+│   │       ├── Sample_C_R2.trimmed_fastqc.html
+│   │       ├── Sample_C_R2.trimmed_fastqc.zip
+│   │       ├── Sample_C_R2.trimmed.fastq.gz
+│   │       ├── Sample_D_R1.trimmed_fastqc.html
+│   │       ├── Sample_D_R1.trimmed_fastqc.zip
+│   │       ├── Sample_D_R1.trimmed.fastq.gz
+│   │       ├── Sample_D_R2.trimmed_fastqc.html
+│   │       ├── Sample_D_R2.trimmed_fastqc.zip
+│   │       └── Sample_D_R2.trimmed.fastq.gz
+│   ├── 03_bwamem2
+│   │   ├── multiqc_test2_post-bam_data
+│   │   │   ├── llms-full.txt
+│   │   │   ├── multiqc_citations.txt
+│   │   │   ├── multiqc_data.json
+│   │   │   ├── multiqc_general_stats.txt
+│   │   │   ├── multiqc.log
+│   │   │   ├── multiqc.parquet
+│   │   │   ├── multiqc_samtools_coverage.txt
+│   │   │   ├── multiqc_samtools_flagstat.txt
+│   │   │   ├── multiqc_samtools_stats.txt
+│   │   │   ├── multiqc_software_versions.txt
+│   │   │   ├── multiqc_sources.txt
+│   │   │   ├── samtools_alignment_plot.txt
+│   │   │   ├── samtools-coverage_Bases.txt
+│   │   │   ├── samtools-coverage_BQ.txt
+│   │   │   ├── samtools-coverage_Coverage.txt
+│   │   │   ├── samtools-coverage_Mean_depth.txt
+│   │   │   ├── samtools-coverage_MQ.txt
+│   │   │   ├── samtools-coverage_Reads.txt
+│   │   │   ├── samtools-coverage-table.txt
+│   │   │   ├── samtools-flagstat-pct-table.txt
+│   │   │   ├── samtools-flagstat-table.txt
+│   │   │   ├── samtools_insert_size.txt
+│   │   │   └── samtools-stats-dp.txt
+│   │   ├── multiqc_test2_post-bam.html
+│   │   ├── sacCer3.fa -> ../../../../test2/ref/sacCer3.fa
+│   │   ├── sacCer3.fa.0123 -> ../../../../test2/ref/sacCer3.fa.0123
+│   │   ├── sacCer3.fa.amb -> ../../../../test2/ref/sacCer3.fa.amb
+│   │   ├── sacCer3.fa.ann -> ../../../../test2/ref/sacCer3.fa.ann
+│   │   ├── sacCer3.fa.bwt.2bit.64 -> ../../../../test2/ref/sacCer3.fa.bwt.2bit.64
+│   │   ├── sacCer3.fa.fai -> ../../../../test2/ref/sacCer3.fa.fai
+│   │   ├── sacCer3.fa.pac -> ../../../../test2/ref/sacCer3.fa.pac
+│   │   ├── Sample_A.coverage.txt
+│   │   ├── Sample_A.flagstat.txt
+│   │   ├── Sample_A.sorted.bam
+│   │   ├── Sample_A.sorted.bam.bai
+│   │   ├── Sample_A.stats.txt
+│   │   ├── Sample_B.coverage.txt
+│   │   ├── Sample_B.flagstat.txt
+│   │   ├── Sample_B.sorted.bam
+│   │   ├── Sample_B.sorted.bam.bai
+│   │   ├── Sample_B.stats.txt
+│   │   ├── Sample_C.coverage.txt
+│   │   ├── Sample_C.flagstat.txt
+│   │   ├── Sample_C.sorted.bam
+│   │   ├── Sample_C.sorted.bam.bai
+│   │   ├── Sample_C.stats.txt
+│   │   ├── Sample_D.coverage.txt
+│   │   ├── Sample_D.flagstat.txt
+│   │   ├── Sample_D.sorted.bam
+│   │   ├── Sample_D.sorted.bam.bai
+│   │   ├── Sample_D.stats.txt
+│   │   ├── sam_to_bam.sh
+│   │   └── stats_check.sh
+│   ├── 04_bcftools
+│   │   ├── bam_list.txt
+│   │   ├── mpileup.sh
+│   │   ├── test2_data.gentle_filter.stats.txt
+│   │   ├── test2_data.gentle_filter.vcf.gz
+│   │   ├── test2_data.raw.stats.txt
+│   │   ├── test2_data.raw.vcf.gz
+│   │   ├── test2_data.stringent_filter.stats.txt
+│   │   └── test2_data.stringent_filter.vcf.gz
+│   └── 05_evaluation
+│       ├── evaluate_snps_v4.py -> ../../../../test2/check/evaluate_snps_v4.py
+│       ├── Sample_A_gentle_false_negatives.tsv
+│       ├── Sample_A_gentle_false_positives.tsv
+│       ├── Sample_A_gentle_genotype_confusion.tsv
+│       ├── Sample_A_raw_false_negatives.tsv
+│       ├── Sample_A_raw_false_positives.tsv
+│       ├── Sample_A_raw_genotype_confusion.tsv
+│       ├── Sample_A_stringent_false_negatives.tsv
+│       ├── Sample_A_stringent_false_positives.tsv
+│       ├── Sample_A_stringent_genotype_confusion.tsv
+│       ├── Sample_B_gentle_false_negatives.tsv
+│       ├── Sample_B_gentle_false_positives.tsv
+│       ├── Sample_B_gentle_genotype_confusion.tsv
+│       ├── Sample_B_raw_false_negatives.tsv
+│       ├── Sample_B_raw_false_positives.tsv
+│       ├── Sample_B_raw_genotype_confusion.tsv
+│       ├── Sample_B_stringent_false_negatives.tsv
+│       ├── Sample_B_stringent_false_positives.tsv
+│       ├── Sample_B_stringent_genotype_confusion.tsv
+│       ├── Sample_C_gentle_false_negatives.tsv
+│       ├── Sample_C_gentle_false_positives.tsv
+│       ├── Sample_C_gentle_genotype_confusion.tsv
+│       ├── Sample_C_raw_false_negatives.tsv
+│       ├── Sample_C_raw_false_positives.tsv
+│       ├── Sample_C_raw_genotype_confusion.tsv
+│       ├── Sample_C_stringent_false_negatives.tsv
+│       ├── Sample_C_stringent_false_positives.tsv
+│       ├── Sample_C_stringent_genotype_confusion.tsv
+│       ├── Sample_D_gentle_false_negatives.tsv
+│       ├── Sample_D_gentle_false_positives.tsv
+│       ├── Sample_D_gentle_genotype_confusion.tsv
+│       ├── Sample_D_raw_false_negatives.tsv
+│       ├── Sample_D_raw_false_positives.tsv
+│       ├── Sample_D_raw_genotype_confusion.tsv
+│       ├── Sample_D_stringent_false_negatives.tsv
+│       ├── Sample_D_stringent_false_positives.tsv
+│       ├── Sample_D_stringent_genotype_confusion.tsv
+│       ├── summary_all_runs.csv
+│       ├── summary_all_runs.tsv
+│       └── truth_snps.vcf -> ../../../../test2/check/truth_snps.vcf
+└── raw_data
+    ├── Sample_A_R1.fastq.gz
+    ├── Sample_A_R2.fastq.gz
+    ├── Sample_B_R1.fastq.gz
+    ├── Sample_B_R2.fastq.gz
+    ├── Sample_C_R1.fastq.gz
+    ├── Sample_C_R2.fastq.gz
+    ├── Sample_D_R1.fastq.gz
+    └── Sample_D_R2.fastq.gz
 ```
 
 ### Results
