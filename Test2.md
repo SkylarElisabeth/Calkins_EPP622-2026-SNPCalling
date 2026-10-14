@@ -24,7 +24,7 @@ cd ../analyses
 mkdir 01_fastqc
 mkdir 02_fastp
 mkdir 03_bwamem2
-mkdir 04_bctools
+mkdir 04_bcftools
 ```
 
 ## Step 1: Quality Control (FastQC + MultiQC)
@@ -190,11 +190,11 @@ This gives the total reads, then the total bases, then the average read length f
 
 ### Results
 
-MultiQC report path and name: `_______`
+MultiQC report path and name: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/02_fastp/trimmed/multiqc_test2_trimmed/multiqc_test2_trimmed.html
 
 For each sample, report R1 + R2. Use the reference genome size above to calculate coverage.
 
-| Sample | Reads before | Reads after | Mean length before | Mean length after |
+| Sample | Reads before | Reads after | Mean base-length before | Mean base-length after |
 | --- | --- | --- | --- | --- |
 | A | 1609300| 1609300 | 241395000 | 241371911 |
 | B | 321860 | 321860 | 48279000 | 48276193 |
@@ -203,12 +203,83 @@ For each sample, report R1 + R2. Use the reference genome size above to calculat
 
 ## Step 3: Alignment (bwa-mem2 + samtools)
 
-### Commands
-Comments 
+Now to align the sequences!
+
+First, I am going into the file I made for bwamem2 and calling the reference files into place.
 
 ```
-commands
+cd ../../03_bwamem2/
+ln -s ../../../../test2/ref/*.fa* .
+
+
 ```
+Then, I will make a loop to take the trimmed files, convert them to SAM files and then convert to BAM.
+```
+nano sam_to_bam.sh
+```
+In nano of sam_to_bam.sh:
+```
+# Loop over every trimmed R1 file.
+for R1 in ../02_fastp/trimmed/*_R1.trimmed.fastq.gz
+do
+    # Get R2 name by switching R1 with R2, retaining the full path
+    R2="${R1/_R1/_R2}"
+
+    # Find the short sample name - no path
+    # first, extract the filename from a full file path.
+    # The ## tells Bash to find the longest possible match from
+    # the beginning of the string and delete it.
+    # The */ matches any text ending with a forward slash.
+    SAMPLE="${R1##*/}"
+    # second, remove _R1.trimmed.fastq.gz from the file name
+    SAMPLE="${SAMPLE%_R1.trimmed.fastq.gz}"
+
+    echo "$R1"
+    echo "$R2"
+    echo "$SAMPLE"
+
+    bwa-mem2 mem \
+        sacCer3.fa \
+        -t 2 \
+	$R1 \
+	$R2 \
+      | samtools sort \
+        -@ 2 \
+        -o $SAMPLE.sorted.bam \
+        -
+
+    ## Build an index
+    samtools index "$SAMPLE.sorted.bam"
+
+done
+```
+Next, to pull the stats from our BAM files, including flagstats and coverage, we will make another loop.
+```
+nano check_stats.sh
+```
+In the nano of check_stats.sh:
+```
+for bamfile in *bam
+do
+        # The ${VAR%pattern} syntax removes "pattern" from the END of the value.
+        SAMPLE=${bamfile%.sorted.bam}
+        echo $SAMPLE
+
+        samtools stats -@ 2 $bamfile > $SAMPLE.stats.txt
+        samtools flagstat -@ 2 $bamfile > $SAMPLE.flagstat.txt
+        samtools coverage $bamfile > $SAMPLE.coverage.txt
+
+done
+```
+Now to run MultiQC using our stats data and export it to desktop.
+```
+multiqc . -n multiqc_test2_post-bam.html
+```
+In seperate, base terminal:
+```
+scp yng832@login.isaac.utk.edu:/lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/03_bwamem2/multiqc_test2_post-bam.html .
+```
+
 
 
 ### Results
@@ -217,28 +288,54 @@ MultiQC report path and name: `_______`
 
 | Sample | % mapped | % properly paired | Mean depth |
 | --- | --- | --- | --- |
-| A | \- | \- | \- |
-| B | \- | \- | \- |
-| C | \- | \- | \- |
-| D | \- | \- | \- |
+| A | 100 | 100 | 20 |
+| B | 100 | 100 | 4 |
+| C | 100 | 100 | 16.4 |
+| D | 100 | 100 | 19.1 |
 
 ## Step 4: Variant Calling (bcftools mpileup + call)
 
-### Commands
-
-Comments 
+First, I navigated into the bcftools folder and pulled in our BAM files.
 
 ```
-commands
+cd ../04_bcftools
 ```
+
+Then, I wrote a script for running mpileup
+```
+nano mpileup.sh
+```
+inside mpileup.sh:
+```
+bcftools mpileup \
+  -Ou \
+  -q 5 \
+  -b bam_list.txt \
+  -f /lustre/isaac24/proj/UTK0505/test2/ref/sacCer3.fa \
+  -a AD,ADF,ADR,DP,SP | \
+bcftools call \
+  -m \
+  -v \
+  -Oz \
+  -o test2_data.raw.vcf.gz
+```
+I then generated a summary statistic for test2_data.raw.vcf.gz
+```
+bcftools stats  test2_data.raw.vcf.gz > test2_data.raw.stats.txt
+```
+The raw VCF contained:
+- 4 samples
+- 4920 variant records
+- 4920 SNPs
+- 0 indels
+- 0 MNPs
+- 0 other variant types
 
 ### Results
 
-bcftools stats report path and name: `_______`
+bcftools stats report path and name: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/04_bcftools/test2_data.raw.stats.txt 
 
 ## Step 5: Filtering (bcftools filter)
-
-### Commands
 
 I am going to try a gentle filtering and more stingent filtering. (WARNING: These are different filters than what we have seen in class.)
 
@@ -246,33 +343,42 @@ Gentle: exclude variants with a QUAL less than 20 or less than 5 total read dept
 
 Stringent: exclude variants with a QUAL less than 30 or less than 10 total read depth across all samples or a site level mapping quality (root mean square) of less than 40
 
-```bash
-#filtering gentle
-#filtering stringent
+For gentle filtering:
 ```
+bcftools filter  -e 'TYPE="indel" | QUAL<10 | INFO/DP<5'  -o test2_data.gentle_filter.vcf.gz test2_data.raw.vcf.gz
 
-```bash
-# bcftools stats on gentle
-# bcftools stats on stringent
+```
+For stringent filtering:
+```
+bcftools filter  -e 'TYPE="indel" | QUAL<30 | INFO/DP<10 | INFO/MQ<40'  -o test2_data.stringent_filter.vcf.gz test2_data.raw.vcf.gz
 ```
 
 ### Results
 
-bcftools stats report path and name for gentle filtering: `_______`
+bcftools stats report path and name for gentle filtering: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/04_bcftools/test2_data.gentle_filter.stats.txt
 
-bcftools stats report path and name: for stringent filtering: `_______`
+bcftools stats report path and name: for stringent filtering: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/04_bcftools/test2_data.stringent_filter.stats.txt
 
 | VCF | number of SNPs |
 | --- | --- |
-| raw | \- |
-| gentle | \- |
-| stringent | \- |
+| raw | 4920|
+| gentle | 4869 |
+| stringent | 4774 |
 
 ## Step 6: Evaluation Against the Truth Set
+First, I am creating a directory for evaluation and linking to the provided evaluate_snps_v4.py and truth_snps.vcf.
+```
+cd ../
+mkdir 05_evaluation
+cd 05_evaluation/
+ln -s  ../../../../test2/check/evaluate_snps_v4.py .
+ln -s  ../../../../test2/check/truth_snps.vcf .
+```
+Now running evaluate_snps_v4.py:
 
-### Commands
 
-Link to the provided evaluate_snps_v4.py and truth_snps.vcf. Find the precision, recall and F1 for gently filtered and stringently filtered SNP sets.
+
+ Find the precision, recall and F1 for gently filtered and stringently filtered SNP sets.
 
 Example of how to run evaluate_snps_v4.py:
 
@@ -305,18 +411,18 @@ From `this folder` that holds all my analysis, here is the directory structure (
 
 | Sample | Filter | TP | FP | FN | Precision | Recall | F1 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A | raw | \- | \- | \- | \- | \- | \- |
-| A | gentle | \- | \- | \- | \- | \- | \- |
-| A | strict | \- | \- | \- | \- | \- | \- |
-| B | raw | \- | \- | \- | \- | \- | \- |
-| B | gentle | \- | \- | \- | \- | \- | \- |
-| B | strict | \- | \- | \- | \- | \- | \- |
-| C | raw | \- | \- | \- | \- | \- | \- |
-| C | gentle | \- | \- | \- | \- | \- | \- |
-| C | strict | \- | \- | \- | \- | \- | \- |
-| D | raw | \- | \- | \- | \- | \- | \- |
-| D | gentle | \- | \- | \- | \- | \- | \- |
-| D | strict | \- | \- | \- | \- | \- | \- |
+| A | raw | 4875 | 0 | 125 | 1 | 0.9750 | 0.9873|
+| A | gentle | 4864 | 0 | 136 | 1 | 0.9728 | 0.9862 |
+| A | strict | 4772 | 0 | 228 | 1 |	0.9544 | 0.9767 |
+| B | raw | 4422 | 23 | 578 | 0.9948 | 0.8844 | 0.9364|
+| B | gentle | 4419 | 0 | 581 | 1 | 0.8838 | 0.9383 |
+| B | strict | 4772 | 0 | 228 | 1 | 0.9544 | 0.9767 |
+| C | raw | 4871 | 2 | 129 | 0.9996 | 0.9742 | 0.9867
+| C | gentle | 4865 | 0 | 135 | 1 | 0.9730 | 0.9863 |
+| C | strict | 4772 | 0 | 228 | 1 | 0.9544 | 0.9767 |
+| D | raw | 4859 | 15 | 141 | 0.9969 | 0.9718 | 0.9842 |
+| D | gentle | 4851 | 1 | 149 | 0.9998 | 0.9702 | 0.9848 |
+| D | strict | 4761 | 0 | 239 | 1 | 0.9522 | 0.9755 |
 
 ## Assignment Analysis - Questions to answer
 
