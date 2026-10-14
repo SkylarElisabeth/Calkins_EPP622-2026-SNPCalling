@@ -375,6 +375,10 @@ ln -s  ../../../../test2/check/evaluate_snps_v4.py .
 ln -s  ../../../../test2/check/truth_snps.vcf .
 ```
 Now running evaluate_snps_v4.py:
+```
+python3 ./evaluate_snps_v4.py --truth ./truth_snps.vcf --calls ../04_bcftools/test2_data.raw.vcf.gz --all-samples --tag raw --outdir ../05_evaluation/
+python3 ./evaluate_snps_v4.py --truth ./truth_snps.vcf --calls ../04_bcftools/test2_data.gentle_filter.vcf.gz --all-samples --tag gentle --outdir ../05_evaluation/
+python3 ./evaluate_snps_v4.py --truth ./truth_snps.vcf --calls ../04_bcftools/test2_data.stringent_filter.vcf.gz --all-samples --tag stringent --outdir ../05_evaluation/
 
 
 
@@ -416,7 +420,7 @@ From `this folder` that holds all my analysis, here is the directory structure (
 | A | strict | 4772 | 0 | 228 | 1 |	0.9544 | 0.9767 |
 | B | raw | 4422 | 23 | 578 | 0.9948 | 0.8844 | 0.9364|
 | B | gentle | 4419 | 0 | 581 | 1 | 0.8838 | 0.9383 |
-| B | strict | 4772 | 0 | 228 | 1 | 0.9544 | 0.9767 |
+| B | strict | 4347 | 0 | 653 | 1 | 0.8694 | 0.9301 |
 | C | raw | 4871 | 2 | 129 | 0.9996 | 0.9742 | 0.9867
 | C | gentle | 4865 | 0 | 135 | 1 | 0.9730 | 0.9863 |
 | C | strict | 4772 | 0 | 228 | 1 | 0.9544 | 0.9767 |
