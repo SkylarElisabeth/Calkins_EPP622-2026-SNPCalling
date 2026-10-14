@@ -323,6 +323,11 @@ I then generated a summary statistic for test2_data.raw.vcf.gz
 ```
 bcftools stats  test2_data.raw.vcf.gz > test2_data.raw.stats.txt
 ```
+
+### Results
+
+bcftools stats report path and name: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/04_bcftools/test2_data.raw.stats.txt 
+
 The raw VCF contained:
 - 4 samples
 - 4920 variant records
@@ -331,13 +336,9 @@ The raw VCF contained:
 - 0 MNPs
 - 0 other variant types
 
-### Results
-
-bcftools stats report path and name: /lustre/isaac24/proj/UTK0505/yng832/test2_/analyses/04_bcftools/test2_data.raw.stats.txt 
-
 ## Step 5: Filtering (bcftools filter)
 
-I am going to try a gentle filtering and more stingent filtering. (WARNING: These are different filters than what we have seen in class.)
+I am going to try a gentle filtering and more stingent filtering. 
 
 Gentle: exclude variants with a QUAL less than 20 or less than 5 total read depth across all samples.
 
